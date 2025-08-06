@@ -1,0 +1,44 @@
+import serial
+import time
+from inputs import get_gamepad
+
+USBcommunication = 'COM3'
+braudspeed = 9600
+ConnectedArduino = serial.Serial(USBcommunication, braudspeed, timeout=1)
+timeForArduinoToInitializeCuzYouKnowItsASlowMicroController = 2
+time.sleep(timeForArduinoToInitializeCuzYouKnowItsASlowMicroController)
+print("Gamepad ready. MANIPULATE WATER RAHHHHH")
+
+button_to_char = {
+    'BTN_WEST': 'R',    # X
+    'BTN_SOUTH': 'T',   # A 
+    'BTN_EAST': 'Y',    # B 
+    'BTN_NORTH': 'U',   # Y
+    'BTN_TL': 'I',      # LB button or as some may call, "Left bumber"....weirdos
+    'BTN_START': 'ESC'  # Start button = esc = which closes this entire app, MAKE SURE TO CLOSE AFTER USING  AS IT GETS EXTREMELY ANNOYING
+}
+
+# to track pressed states to prevent spamming if you hold the button
+alreadyPressed_buttons = set()
+
+while True:
+    events = get_gamepad()
+    for event in events:
+        if event.ev_type == 'Key':
+            btn = event.code
+            state = event.state  #state of an event is 1 when you press and 0 when u release, so keep that in mind if u plan to more advanced stuff with it 
+
+            if btn in button_to_char:
+                if state == 1 and btn not in alreadyPressed_buttons:
+                    alreadyPressed_buttons.add(btn)
+                    Sent_Letter_forArduinoToRead = button_to_char[btn]
+
+                    if Sent_Letter_forArduinoToRead == 'ESC':
+                        print("Stealing your ability to manipulate....")
+                        exit()
+
+                    print(f"Sending '{Sent_Letter_forArduinoToRead}' to Arduino")
+                    ConnectedArduino.write(f"{Sent_Letter_forArduinoToRead}\n".encode())
+
+                elif state == 0 and btn in alreadyPressed_buttons:
+                    alreadyPressed_buttons.remove(btn)
